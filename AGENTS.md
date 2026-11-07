@@ -31,3 +31,25 @@ Use `adding-a-feature` for functional parity and `frontend-design` for a user-fa
 Before building common workspace or agent UI, read `agent-native-toolkit`; for supported customization, read `customizing-agent-native`.
 
 - Guarded verification: run `pnpm agent-native:doctor`; fix findings before done.
+
+## ReprintLess
+
+Fixes printed mistakes with cover-up labels instead of reprints. `/reprint` lists documents; `/reprint/:documentId?page=N&patch=ID` is the editor. Units: PDF points, top-left origin; pages are 0-based.
+
+- "X should be Y": `find-text`, `create-patch` (findText + newText), `reflow-patch` if status is error, then ALWAYS `check-document`; report what else it found in one or two sentences.
+- `weekday_mismatch`: ask which of the two `details.options` the user means. Never guess.
+- Respect locks. Never reword or abbreviate the user's text. Dates, prices and geometry go through actions, never mental maths.
+- `navigation` adds `documentId`, `page`, `patchId`; `navigate --documentId` opens one.
+
+| Action | Purpose |
+|-|-|
+| get-document | Labels, locks, open suggestions |
+| find-text | Text box for a phrase |
+| create-patch | Mark mistake + size label |
+| update-patch | Move/resize, text, size, align |
+| reflow-patch | Fit a red label |
+| create-lock | Protect an area |
+| check-document | Find unmarked mistakes |
+| resolve-suggestion | Accept/dismiss a finding |
+| bulk-edit-prices | % change, dryRun first |
+| plan-label-sheet | Sheet layout + PDF URL |

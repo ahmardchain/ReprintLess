@@ -7,6 +7,7 @@ import {
   IconDownload,
   IconLock,
   IconMinus,
+  IconPercentage,
   IconPlus,
 } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,7 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
-import { ExportDialog, WeekdayDialog, type WeekdayChoice } from "@/components/reprint/Dialogs";
+import { ExportDialog, PricesDialog, WeekdayDialog, type WeekdayChoice } from "@/components/reprint/Dialogs";
 import { PageView } from "@/components/reprint/PageView";
 import { SidePanel, type PanelTab } from "@/components/reprint/SidePanel";
 import {
@@ -59,6 +60,7 @@ export default function ReprintEditor() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [weekday, setWeekday] = useState<WeekdayChoice | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [pricesOpen, setPricesOpen] = useState(false);
   const [animating, setAnimating] = useState<Set<string>>(new Set());
   const [explanations, setExplanations] = useState<Map<string, string>>(new Map());
   const [highlight, setHighlight] = useState<string | null>(null);
@@ -304,7 +306,10 @@ export default function ReprintEditor() {
     );
   }
 
-  const pagePatches = doc.patches;
+  const pagePatches = [...doc.patches].sort(
+    (a, b) => Number((labels.get(a.id) ?? "L0").slice(1)) - Number((labels.get(b.id) ?? "L0").slice(1)),
+  );
+  const hasPrices = doc.pages.some((pg) => pg.lines?.some((l) => /(?:₦|\$|£|€|N(?=\s?\d))\s?\d/.test(l.text)));
   const onSuggestionClick = (s: SuggestionView) => {
     setTab("found");
     setHighlight(s.id);
@@ -364,6 +369,12 @@ export default function ReprintEditor() {
                 <IconPlus className="size-4" />
               </Button>
             </div>
+            {hasPrices ? (
+              <Button variant="outline" size="sm" onClick={() => setPricesOpen(true)}>
+                <IconPercentage className="size-4" />
+                {t("reprint.prices")}
+              </Button>
+            ) : null}
             <Button size="sm" onClick={() => setExportOpen(true)} disabled={doc.patches.length === 0}>
               <IconDownload className="size-4" />
               {t("reprint.export")}
@@ -475,6 +486,16 @@ export default function ReprintEditor() {
 
       <WeekdayDialog choice={weekday} onClose={() => setWeekday(null)} />
       <ExportDialog documentId={documentId} open={exportOpen} onOpenChange={setExportOpen} />
+      <PricesDialog
+        documentId={documentId}
+        open={pricesOpen}
+        onOpenChange={setPricesOpen}
+        onApplied={(count) => {
+          toast.success(t("reprint.applied", { count }));
+          setTab("found");
+          runCheck();
+        }}
+      />
     </main>
   );
 }
