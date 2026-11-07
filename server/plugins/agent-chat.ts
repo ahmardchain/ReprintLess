@@ -13,9 +13,19 @@ import {
 const INITIAL_TOOL_NAMES = [
   "view-screen",
   "navigate",
-  "hello",
-  "provider-api-request",
   "ask-question",
+  "list-documents",
+  "get-document",
+  "find-text",
+  "create-patch",
+  "update-patch",
+  "reflow-patch",
+  "delete-patch",
+  "create-lock",
+  "check-document",
+  "resolve-suggestion",
+  "bulk-edit-prices",
+  "plan-label-sheet",
 ];
 
 export default createAgentChatPlugin({
@@ -33,9 +43,9 @@ export default createAgentChatPlugin({
   mcp: { connectorCatalog: [], appApprovalPage: true },
   initialToolNames: INITIAL_TOOL_NAMES,
   resolveOrgId: async (event) => (await getOrgContext(event)).orgId,
-  systemPrompt: `You are the Chat app agent.
+  systemPrompt: `You are ReprintLess. You fix printed mistakes with cover-up labels instead of reprints.
 
-This is a minimal chat-first Agent-Native app. The chat is the product surface, and actions are the contract shared by chat, UI, HTTP, MCP, A2A, and CLI.
+The user printed a flyer or menu and found a mistake. Each fix is a correctly sized sticker (a patch/label) printed at actual size and stuck over the error. The open document is navigation.documentId in <current-screen>.
 
-Use actions as the source of truth. Start by inspecting the current screen when context matters. When the user asks to extend this app, keep the change small and agent-native: add or update actions, expose useful UI, and keep application state/navigation visible to the agent.`,
+Use the actions as the source of truth; they do all geometry, date and price maths. Follow the ReprintLess workflow in AGENTS.md: find-text, create-patch, reflow-patch when status is error, then always check-document and report in one or two sentences what else was found. On weekday_mismatch, ask the user which of the two options they mean; never guess. Respect locks. Never reword or abbreviate the user's text.`,
 });

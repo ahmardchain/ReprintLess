@@ -18,13 +18,18 @@ export interface NavigationState {
   path?: string;
   publicPath?: string;
   threadId?: string;
+  /** ReprintLess: open document, 0-based page and selected label. */
+  documentId?: string;
+  page?: number;
+  patchId?: string;
 }
 
 export function useNavigationState() {
   useAgentRouteState<NavigationState>({
     browserTabId: TAB_ID,
     requestSource: TAB_ID,
-    getNavigationState: ({ pathname }) => navigationStateForPath(pathname),
+    getNavigationState: ({ pathname, searchParams }) =>
+      navigationStateForPath(pathname, searchParams),
     getCommandPath: commandPathForNavigation,
   });
 }
@@ -62,17 +67,27 @@ function matchesPathPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
-export function navigationStateForPath(pathname: string): NavigationState {
+export function navigationStateForPath(
+  pathname: string,
+  searchParams?: URLSearchParams,
+): NavigationState {
   const threadId = threadIdFromPath(pathname);
+  const documentId = pathname.match(/^\/reprint\/([^/]+)/)?.[1];
+  const page = searchParams?.get("page");
+  const patchId = searchParams?.get("patch");
   return {
     view: viewForPath(pathname),
     path: pathname,
     publicPath: appPathFromLocalRoute(pathname),
     ...(threadId ? { threadId } : {}),
+    ...(documentId ? { documentId: decodeURIComponent(documentId) } : {}),
+    ...(documentId ? { page: Number(page ?? 0) || 0 } : {}),
+    ...(documentId && patchId ? { patchId } : {}),
   };
 }
 
 function viewForPath(pathname: string): string {
+  if (pathname.startsWith("/reprint")) return "reprint";
   if (isChatPathname(pathname)) return "chat";
   if (pathname === HOME_PATH) return "home";
   if (pathname.startsWith("/database")) return "database";
@@ -93,6 +108,8 @@ function pathForView(view?: string): string {
       return NEW_CHAT_PATH;
     case "home":
       return HOME_PATH;
+    case "reprint":
+      return "/reprint";
     case "database":
       return "/database";
     case "extensions":
@@ -111,6 +128,13 @@ function pathForView(view?: string): string {
 }
 
 export function pathForCommand(command: any): string {
+  if (command?.view === "reprint" && typeof command?.documentId === "string" && command.documentId) {
+    const qs = new URLSearchParams();
+    if (command.page !== undefined && command.page !== null) qs.set("page", String(command.page));
+    if (typeof command.patchId === "string" && command.patchId) qs.set("patch", command.patchId);
+    const q = qs.toString();
+    return `/reprint/${encodeURIComponent(command.documentId)}${q ? `?${q}` : ""}`;
+  }
   const path = pathForView(command?.view);
   if (command?.view !== "chat" && command?.view !== "ask") return path;
   const threadId =

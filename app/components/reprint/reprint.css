@@ -1,0 +1,108 @@
+/* ReprintLess: paper on a warm desk. */
+.rl-desk {
+  --rl-desk: #e4ddd0;
+  --rl-desk-2: #d9d0c0;
+  --rl-ink: #2b2620;
+  --rl-ok: #2f8f4e;
+  --rl-warn: #c98a12;
+  --rl-error: #d0362b;
+  --rl-lock: #2f5fb3;
+  background-color: var(--rl-desk);
+  background-image:
+    radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.35), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(120, 90, 50, 0.12), transparent 50%),
+    repeating-linear-gradient(90deg, rgba(110, 80, 40, 0.025) 0 2px, transparent 2px 7px);
+}
+.dark .rl-desk {
+  --rl-desk: #24211d;
+  --rl-desk-2: #1d1b18;
+  background-image:
+    radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.05), transparent 45%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.015) 0 2px, transparent 2px 7px);
+}
+.rl-paper {
+  position: relative;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px rgba(40, 30, 15, 0.06),
+    0 1px 2px rgba(40, 30, 15, 0.12),
+    0 10px 24px -8px rgba(60, 40, 10, 0.35),
+    0 30px 60px -20px rgba(60, 40, 10, 0.3);
+  transform: rotate(-0.15deg);
+}
+.rl-paper::after {
+  /* faint paper grain */
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.025));
+}
+.rl-patch {
+  position: absolute;
+  touch-action: none;
+}
+.rl-patch.rl-animate {
+  transition:
+    left 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.rl-patch.rl-animate .rl-label-line {
+  transition:
+    font-size 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    left 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.rl-label {
+  /* a sticker: very slight lift so it reads as stuck-on paper */
+  box-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.18);
+}
+.rl-label-line {
+  position: absolute;
+  white-space: pre;
+  line-height: 1.164;
+}
+.rl-lock {
+  position: absolute;
+  border: 1px dashed var(--rl-lock);
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(47, 95, 179, 0.2) 0 3px,
+    rgba(47, 95, 179, 0.04) 3px 7px
+  );
+}
+.rl-suggestion {
+  position: absolute;
+  border: 1.5px dotted var(--rl-warn);
+  border-radius: 2px;
+  background: rgba(201, 138, 18, 0.08);
+}
+.rl-draw {
+  position: absolute;
+  border: 1.5px solid var(--rl-error);
+  background: rgba(208, 54, 43, 0.06);
+}
+.rl-draw.rl-draw-lock {
+  border-color: var(--rl-lock);
+  background: rgba(47, 95, 179, 0.1);
+}
+.rl-handle {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background: #fff;
+  border: 1.5px solid var(--rl-ink);
+  border-radius: 2px;
+}
+.rl-wire {
+  font-family: "RL Sans", sans-serif;
+  fill: #b9b2a6;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rl-patch.rl-animate,
+  .rl-patch.rl-animate .rl-label-line {
+    transition: none;
+  }
+}
