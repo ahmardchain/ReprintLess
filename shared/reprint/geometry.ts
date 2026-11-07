@@ -143,14 +143,14 @@ function remainderBoxes(line: Line, target: Rect, measure: Measure): { rect: Rec
   const leftText = text.slice(0, leftEnd).replace(/\s+$/, "");
   if (leftText.length) {
     const x1 = boundaryX(line, leftText.length, measure);
-    if (x1 - line.x > 0.5) out.push({ rect: { x: line.x, y: line.y, w: x1 - line.x, h: line.h }, label: line.text });
+    if (x1 - line.x > 0.5) out.push({ rect: { x: line.x, y: line.y, w: x1 - line.x, h: line.h }, label: leftText.trim() });
   }
   const rightRaw = text.slice(firstRight);
   const lead = rightRaw.length - rightRaw.replace(/^\s+/, "").length;
   if (rightRaw.trim().length) {
     const x0 = boundaryX(line, firstRight + lead, measure);
     const x1 = line.x + line.w;
-    if (x1 - x0 > 0.5) out.push({ rect: { x: x0, y: line.y, w: x1 - x0, h: line.h }, label: line.text });
+    if (x1 - x0 > 0.5) out.push({ rect: { x: x0, y: line.y, w: x1 - x0, h: line.h }, label: rightRaw.trim() });
   }
   return out;
 }

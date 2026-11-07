@@ -120,21 +120,29 @@ export function computeGrid(data: Uint8ClampedArray, width: number, height: numb
       let best = { n: 0, r: 255, g: 255, b: 255 };
       for (const b of buckets.values()) if (b.n > best.n) best = b;
       const dom = best.n ? rgbToHex(best.r / best.n, best.g / best.n, best.b / best.n) : "#ffffff";
-      let ir = 0;
-      let ig = 0;
-      let ib = 0;
-      let inN = 0;
+      // Ink: the most common colour among pixels far from the background.
+      // A mode (not a mean) skips anti-aliased glyph edges, which would
+      // otherwise wash the colour out towards the paper.
+      const inkBuckets = new Map<number, { n: number; r: number; g: number; b: number; d: number }>();
       for (const p of px) {
-        const h = rgbToHex(p[0], p[1], p[2]);
-        if (colorDistance(h, dom) > 80) {
-          ir += p[0];
-          ig += p[1];
-          ib += p[2];
-          inN++;
-        }
+        const d = colorDistance(rgbToHex(p[0], p[1], p[2]), dom);
+        if (d <= 80) continue;
+        const key = ((p[0] >> 5) << 6) | ((p[1] >> 5) << 3) | (p[2] >> 5);
+        const bucket = inkBuckets.get(key) ?? { n: 0, r: 0, g: 0, b: 0, d: 0 };
+        bucket.n++;
+        bucket.r += p[0];
+        bucket.g += p[1];
+        bucket.b += p[2];
+        bucket.d += d;
+        inkBuckets.set(key, bucket);
+      }
+      let inkBest: { n: number; r: number; g: number; b: number; d: number } | null = null;
+      for (const bk of inkBuckets.values()) {
+        // Prefer frequent buckets, breaking near-ties towards stronger contrast.
+        if (!inkBest || bk.n * (bk.d / bk.n) > inkBest.n * (inkBest.d / inkBest.n)) inkBest = bk;
       }
       colors.push(dom);
-      ink.push(inN ? rgbToHex(ir / inN, ig / inN, ib / inN) : "");
+      ink.push(inkBest ? rgbToHex(inkBest.r / inkBest.n, inkBest.g / inkBest.n, inkBest.b / inkBest.n) : "");
       uniformity.push(px.length ? round2(best.n / px.length) : 1);
     }
   }

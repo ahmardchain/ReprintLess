@@ -1,5 +1,5 @@
 /* ReprintLess: paper on a warm desk. */
-.rl-desk {
+:root {
   --rl-desk: #e4ddd0;
   --rl-desk-2: #d9d0c0;
   --rl-ink: #2b2620;
@@ -7,6 +7,8 @@
   --rl-warn: #c98a12;
   --rl-error: #d0362b;
   --rl-lock: #2f5fb3;
+}
+.rl-desk {
   background-color: var(--rl-desk);
   background-image:
     radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.35), transparent 45%),

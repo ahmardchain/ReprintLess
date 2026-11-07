@@ -88,6 +88,7 @@ export function PageView(props: PageViewProps) {
 
   function onBackgroundDown(e: React.PointerEvent<HTMLDivElement>) {
     if (e.button !== 0 || e.target !== overlayRef.current) return;
+    e.preventDefault();
     const p = toPt(e);
     overlayRef.current!.setPointerCapture(e.pointerId);
     props.onSelect(null);
@@ -97,7 +98,14 @@ export function PageView(props: PageViewProps) {
   function onPatchDown(e: React.PointerEvent, patch: PatchView, handle?: Handle) {
     if (e.button !== 0) return;
     e.stopPropagation();
+    e.preventDefault();
     overlayRef.current!.setPointerCapture(e.pointerId);
+    if (props.lockMode || e.shiftKey) {
+      // Locking over a label: draw the lock instead of moving the label.
+      const p = toPt(e);
+      setDrag({ kind: "draw", start: p, rect: { x: p.x, y: p.y, w: 0, h: 0 }, lock: true });
+      return;
+    }
     props.onSelect(patch.id);
     const start = toPt(e);
     setDrag(
@@ -165,7 +173,7 @@ export function PageView(props: PageViewProps) {
   const suggestions = doc.suggestions.filter((s) => s.page === pageIndex && s.status === "open");
 
   return (
-    <div className="rl-paper" style={{ width: W, height: H }}>
+    <div className="rl-paper select-none" style={{ width: W, height: H }}>
       {bytes ? (
         <canvas ref={canvasRef} aria-hidden className="absolute inset-0" style={{ width: W, height: H, opacity: rendered ? 1 : 0.35 }} />
       ) : (
@@ -191,7 +199,7 @@ export function PageView(props: PageViewProps) {
         ref={overlayRef}
         role="application"
         aria-label={props.lockMode ? t("reprint.lockModeHint") : t("reprint.markHint")}
-        className={cn("absolute inset-0", props.lockMode ? "cursor-cell" : "cursor-crosshair")}
+        className={cn("absolute inset-0 select-none", props.lockMode ? "cursor-cell" : "cursor-crosshair")}
         onPointerDown={onBackgroundDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
