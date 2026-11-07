@@ -21,16 +21,16 @@ describe("check-document", () => {
       },
     ],
   };
-  const [dateMatch] = findText(flyer.pages, "Saturday, 5 December 2026", measure);
+  const dateMatch = findText(flyer.pages, "Saturday, 5 December 2026", measure)[0]!;
   const patch = { page: 0, target: dateMatch.bbox, oldText: "Saturday, 5 December 2026", newText: "Saturday, 12 December 2026" };
 
   it("finds the old date in other formats and re-formats the new one", () => {
     const related = checkDocument(flyer, [patch], measure, today).filter((s) => s.kind === "related");
     expect(related.map((s) => [s.oldText, s.suggestedText])).toEqual([
-      ["5/12/2026", "12/12/2026"],
+      ["5/12/2026!", "12/12/2026!"],
       ["Sat 5 Dec", "Sat 12 Dec"],
     ]);
-    const foot = related[0];
+    const foot = related[0]!;
     const expectedX = 48 + measure("See you on ", "sans", false, 11);
     expect(foot.target.x).toBeCloseTo(expectedX, 1);
   });

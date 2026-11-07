@@ -78,20 +78,30 @@ const fmtHuman = (d: YMD) =>
     textCase: "title",
   });
 
+/** Widens [start, end) over punctuation glued to the mention ("5/12/2026!"). */
+export function withAttachedPunctuation(text: string, start: number, end: number) {
+  let s = start;
+  let e = end;
+  while (s > 0 && /[("'“‘\[]/.test(text[s - 1] ?? "")) s--;
+  while (e < text.length && /[!?.,;:)"'”’\]]/.test(text[e] ?? "")) e++;
+  return { start: s, end: e, before: text.slice(s, start), after: text.slice(end, e) };
+}
+
 export function relatedSuggestions(doc: Doc, patches: PatchLike[], measure: Measure, year: number): SuggestionDraft[] {
   const out: SuggestionDraft[] = [];
   for (const patch of patches) {
     const oldDates = findDates(patch.oldText);
     const newDates = findDates(patch.newText);
     if (oldDates.length === 1 && newDates.length === 1) {
-      const od = oldDates[0].date;
-      const nd = newDates[0].date;
+      const od = oldDates[0]!.date;
+      const nd = newDates[0]!.date;
       const newDate: YMD = { y: nd.y ?? od.y ?? year, m: nd.m, d: nd.d };
       doc.pages.forEach((page, pageIndex) => {
         for (const line of page.lines) {
           for (const mention of findDates(line.text)) {
             if (!sameDate(mention.date, withYear(od, od.y ?? year))) continue;
-            const bbox = subLineRect(line, mention.start, mention.end, measure);
+            const span = withAttachedPunctuation(line.text, mention.start, mention.end);
+            const bbox = subLineRect(line, span.start, span.end, measure);
             if (underPatch(patches, pageIndex, bbox)) continue;
             const suggested = formatDate(newDate, mention.format);
             if (suggested === mention.text) continue;
@@ -100,8 +110,8 @@ export function relatedSuggestions(doc: Doc, patches: PatchLike[], measure: Meas
               severity: "error",
               page: pageIndex,
               target: bbox,
-              oldText: mention.text,
-              suggestedText: suggested,
+              oldText: span.before + mention.text + span.after,
+              suggestedText: span.before + suggested + span.after,
               message: `"${line.text}" still has the old date ${mention.text}. In this line's format the new date is ${suggested}.`,
             });
           }
@@ -210,7 +220,7 @@ export function menuRows(doc: Doc, patches: PatchLike[], measure: Measure): RowI
         const ps = findPrices(l.text);
         if (ps.length) {
           priceLine = l;
-          price = ps[ps.length - 1];
+          price = ps[ps.length - 1] ?? null;
         }
       }
       if (!priceLine || !price) continue;
@@ -271,7 +281,7 @@ export function currencySuggestions(doc: Doc, patches: PatchLike[], measure: Mea
   const counts = new Map<string, number>();
   for (const a of all) counts.set(a.m.symbol, (counts.get(a.m.symbol) ?? 0) + 1);
   if (counts.size < 2) return [];
-  const [major] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+  const major = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "₦";
   const style = all.find((a) => a.m.symbol === major)!.m;
   const out: SuggestionDraft[] = [];
   for (const a of all) {
@@ -324,7 +334,7 @@ export interface PriceEdit {
 
 /** Plans a percentage change for every price in the document. */
 export function planPriceEdits(
-  doc: Doc & { pages: { lines: Line[]; width: number }[] },
+  doc: { pages: { lines: Line[]; width: number }[] },
   percent: number,
   roundTo: number,
   measure: Measure,

@@ -71,6 +71,11 @@ export interface LayoutLine {
 export interface PatchLayout {
   lines: LayoutLine[];
   fontSize: number;
+  /**
+   * Horizontal text scale (1 = none). When the printed font is substituted
+   * with DejaVu, glyphs are scaled so the label keeps the original's width.
+   */
+  scaleX?: number;
 }
 
 export interface Warning {

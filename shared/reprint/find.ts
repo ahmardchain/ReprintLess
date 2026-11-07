@@ -29,7 +29,7 @@ export function charX(
 ): number {
   let pos = 0;
   for (let i = 0; i < line.runs.length; i++) {
-    const run = line.runs[i];
+    const run = line.runs[i]!;
     const len = run.text.length;
     const inside = side === "end" ? offset > pos && offset <= pos + len : offset >= pos && offset < pos + len;
     if (inside) {

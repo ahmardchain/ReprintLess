@@ -38,7 +38,7 @@ interface Obstacle {
 function obstaclesFor(patch: PatchGeometry, ctx: FitContext): Obstacle[] {
   return [
     ...ctx.locks.map((l) => ({ rect: l.rect, label: l.label || "locked area" })),
-    ...textObstacles(ctx.lines, patch.target),
+    ...textObstacles(ctx.lines, patch.target, ctx.measure),
     ...ctx.patches.filter((p) => p.id !== patch.id).map((p) => ({ rect: p.rect, label: "another label" })),
   ];
 }
@@ -113,7 +113,7 @@ export function reflowPatch(patch: PatchGeometry, ctx: FitContext): ReflowResult
   if (Math.abs(trimmed.x - r.x) > 0.25 || Math.abs(trimmed.w - r.w) > 0.25) {
     shapes.push({ kind: "trim", rect: trimmed, shape: 1 });
   }
-  const base = shapes[shapes.length - 1].rect;
+  const base = shapes[shapes.length - 1]!.rect;
   if (need > base.w) {
     const growR = Math.min(span.right, base.x + need) - base.x;
     if (growR > base.w + 0.25)
@@ -162,7 +162,7 @@ export function reflowPatch(patch: PatchGeometry, ctx: FitContext): ReflowResult
     }
     let found = false;
     for (let fs = size; fs >= MIN_FONT_SIZE - 1e-9; fs = round2(fs - 0.25)) {
-      const res = layoutText(patch.newText, rect, fs, patch.fontFamily, patch.bold, patch.align, ctx.measure);
+      const res = layoutText(patch.newText, rect, fs, patch.fontFamily, patch.bold, patch.align, ctx.measure, 3, ctx.scaleX ?? 1);
       if (!res.fits) continue;
       const check = checkFit({ ...patch, rect, fontSize: fs }, fitCtx);
       if (check.status === "error") continue;

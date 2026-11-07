@@ -1,5 +1,5 @@
 import fontkit from "@pdf-lib/fontkit";
-import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, rgb, setCharacterSqueeze, type PDFFont, type PDFPage } from "pdf-lib";
 
 import { hexToRgb } from "../../shared/reprint/colors.js";
 import { planSheet } from "../../shared/reprint/labels.js";
@@ -11,7 +11,7 @@ import {
   type PatchLayout,
   type Rect,
 } from "../../shared/reprint/types.js";
-import { fontBytes } from "./fonts.js";
+import { fontBytes, measureText } from "./fonts.js";
 
 export interface SheetPatch {
   id: string;
@@ -65,7 +65,7 @@ export async function buildLabelSheet(input: SheetInput): Promise<Uint8Array> {
   for (let i = 0; i < pack.sheets; i++) sheets.push(pdf.addPage([W, H]));
 
   // Header on sheet 1: title, instructions and a calibration square.
-  const s0 = sheets[0];
+  const s0 = sheets[0]!;
   const top = (y: number) => H - y;
   s0.drawText("ReprintLess label sheet", { x: SHEET_MARGIN, y: top(SHEET_MARGIN + 16), size: 15, font: uiBold, color: rgb(0.1, 0.1, 0.1) });
   s0.drawText(input.documentName.slice(0, 70), { x: SHEET_MARGIN, y: top(SHEET_MARGIN + 34), size: 10, font: ui, color: rgb(0.3, 0.3, 0.3) });
@@ -84,7 +84,7 @@ export async function buildLabelSheet(input: SheetInput): Promise<Uint8Array> {
 
   for (const place of pack.placements) {
     const patch = byId.get(place.id)!;
-    const page = sheets[place.sheet];
+    const page = sheets[place.sheet]!;
     const { x, y, w, h } = place;
     page.drawRectangle({
       x,
@@ -95,6 +95,9 @@ export async function buildLabelSheet(input: SheetInput): Promise<Uint8Array> {
       ...(patch.border ? { borderColor: rgb(0.55, 0.55, 0.55), borderWidth: 0.4 } : {}),
     });
     const f = await font(patch.fontFamily, patch.bold);
+    const squeeze = patch.layout.scaleX && patch.layout.scaleX !== 1 ? patch.layout.scaleX : null;
+    // Horizontal scaling (Tz) keeps a substituted font at the original width.
+    if (squeeze) page.pushOperators(setCharacterSqueeze(squeeze * 100));
     for (const ln of patch.layout.lines) {
       page.drawText(ln.text, {
         x: x + ln.x,
@@ -104,6 +107,7 @@ export async function buildLabelSheet(input: SheetInput): Promise<Uint8Array> {
         color: color(patch.textColor),
       });
     }
+    if (squeeze) page.pushOperators(setCharacterSqueeze(100));
     // Crop marks at each corner, outside the cut line.
     const gap = 2;
     const len = CROP_MARGIN - gap - 1;
@@ -137,6 +141,9 @@ export async function buildLabelSheet(input: SheetInput): Promise<Uint8Array> {
       const size = line.fontSize * scale;
       if (size < 1) continue;
       const f = await font(line.fontFamily, line.bold);
+      const natural = measureText(line.text, line.fontFamily, line.bold, line.fontSize);
+      const ratio = natural > 0 ? Math.min(1.3, Math.max(0.6, line.w / natural)) : 1;
+      map.pushOperators(setCharacterSqueeze(ratio * 100));
       map.drawText(line.text, {
         x: ox + line.x * scale,
         y: top(oy + (line.y + ASCENT_RATIO * line.fontSize) * scale),
@@ -144,6 +151,7 @@ export async function buildLabelSheet(input: SheetInput): Promise<Uint8Array> {
         font: f,
         color: rgb(0.74, 0.74, 0.74),
       });
+      map.pushOperators(setCharacterSqueeze(100));
     }
     for (const p of ordered.filter((o) => o.page === pageIndex)) {
       const r = p.rect;

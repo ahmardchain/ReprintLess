@@ -25,7 +25,7 @@ const RE_PRICE =
 export function findPrices(text: string): PriceMention[] {
   const out: PriceMention[] = [];
   for (const m of text.matchAll(RE_PRICE)) {
-    const [whole, symbol, gap, digits, cents] = m;
+    const [whole, symbol = "", gap = "", digits = "0", cents] = m;
     const units = Number(digits.replace(/,/g, ""));
     out.push({
       start: m.index ?? 0,
@@ -92,7 +92,7 @@ export function comboRelation(combo: number, parts: number[]): ComboRelation {
 /** Splits "Combo: Jollof Rice + Chicken" into its item names. */
 export function comboParts(name: string): string[] | null {
   const m = name.match(/^\s*(?:combo|meal deal|set|bundle)\b\s*[:\-–]?\s*(.+)$/i);
-  if (!m) return null;
+  if (!m?.[1]) return null;
   const parts = m[1]
     .split(/\s*(?:\+|&|\band\b|\bwith\b)\s*/i)
     .map((p) => p.trim())

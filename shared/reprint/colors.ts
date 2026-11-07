@@ -57,13 +57,16 @@ export function matchColors(grid: Grid | null | undefined, rect: Rect): ColorMat
   const idx = cellsIn(grid, rect);
   if (idx.length === 0) return { bg: "#ffffff", text: null, uniform: false, share: 0 };
   const counts = new Map<string, number>();
-  for (const i of idx) counts.set(grid.colors[i], (counts.get(grid.colors[i]) ?? 0) + 1);
-  const [bg] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+  for (const i of idx) {
+    const c = grid.colors[i] ?? "#ffffff";
+    counts.set(c, (counts.get(c) ?? 0) + 1);
+  }
+  const bg = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "#ffffff";
   let near = 0;
   let uni = 0;
   const inks: [number, number, number][] = [];
   for (const i of idx) {
-    if (colorDistance(grid.colors[i], bg) <= 24) near++;
+    if (colorDistance(grid.colors[i] ?? "#ffffff", bg) <= 24) near++;
     uni += grid.uniformity[i] ?? 0;
     const ink = grid.ink[i];
     if (ink && colorDistance(ink, bg) > 60) inks.push(hexToRgb(ink));

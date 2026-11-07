@@ -11,7 +11,7 @@ describe("prices", () => {
     ["€1,000.00", "€", 100000],
     ["₦ 12,500", "₦", 1250000],
   ])("parses %s", (text, symbol, minor) => {
-    const [p] = findPrices(text);
+    const p = findPrices(text)[0]!;
     expect(p.text).toBe(text);
     expect(p.symbol).toBe(symbol);
     expect(p.minor).toBe(minor);
@@ -29,9 +29,9 @@ describe("prices", () => {
   });
 
   it("formats in the original style", () => {
-    const [p] = findPrices("₦2,300");
+    const p = findPrices("₦2,300")[0]!;
     expect(formatPrice(255000, p)).toBe("₦2,550");
-    const [d] = findPrices("$4.50");
+    const d = findPrices("$4.50")[0]!;
     expect(formatPrice(495, d)).toBe("$4.95");
   });
 

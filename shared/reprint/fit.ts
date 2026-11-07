@@ -35,7 +35,7 @@ export function wrapWords(
   const words = text.split(/\s+/).filter(Boolean);
   if (words.length === 0) return [""];
   const lines: string[] = [];
-  let cur = words[0];
+  let cur = words[0]!;
   for (const word of words.slice(1)) {
     const next = `${cur} ${word}`;
     if (width(next) <= maxW) cur = next;
@@ -62,6 +62,7 @@ export function layoutText(
   align: Align,
   measure: Measure,
   maxLines = 3,
+  scaleX = 1,
 ): LayoutResult {
   const width = (s: string) => measure(s, family, bold, fontSize);
   const innerW = rect.w - 2 * PAD_X;
@@ -79,6 +80,7 @@ export function layoutText(
     }
   }
   const widths = lines.map(width);
+  const widthAt = (i: number) => widths[i] ?? 0;
   const maxWidth = Math.max(...widths);
   // Visual block: cap-height-ish ascent above the first baseline and a
   // small descent below the last.
@@ -86,7 +88,7 @@ export function layoutText(
   const neededHeight = blockH + 2 * PAD_Y;
   const top = (rect.h - blockH) / 2;
   const laid = lines.map((t, i) => {
-    const w = widths[i];
+    const w = widthAt(i);
     const x =
       align === "right"
         ? rect.w - PAD_X - w
@@ -102,7 +104,7 @@ export function layoutText(
   });
   const fits = maxWidth <= innerW + 0.01 && neededHeight <= rect.h + 0.01;
   return {
-    layout: { lines: laid, fontSize: round2(fontSize) },
+    layout: { lines: laid, fontSize: round2(fontSize), ...(scaleX !== 1 ? { scaleX: Math.round(scaleX * 1000) / 1000 } : {}) },
     fits,
     maxWidth,
     neededHeight,
@@ -119,6 +121,11 @@ export interface FitContext {
   measure: Measure;
   /** Extra context-derived warnings (background, font substitution). */
   extraWarnings?: Warning[];
+  /**
+   * Horizontal scale applied to label glyphs; `measure` must already include
+   * it. Recorded on the layout so renderers can apply it.
+   */
+  scaleX?: number;
 }
 
 export interface FitResult {
@@ -140,7 +147,7 @@ export function collisions(
   rect: Rect,
   target: Rect,
   patchId: string,
-  ctx: Omit<FitContext, "measure">,
+  ctx: Omit<FitContext, "measure"> & { measure?: FitContext["measure"] },
 ): Collision[] {
   const out: Collision[] = [];
   if (!contains({ x: 0, y: 0, w: ctx.page.width, h: ctx.page.height }, rect, 0.5)) {
@@ -150,7 +157,7 @@ export function collisions(
     if (overlaps(rect, lock.rect))
       out.push({ kind: "lock", rect: lock.rect, label: lock.label || "locked area", id: lock.id });
   }
-  for (const ob of textObstacles(ctx.lines, target)) {
+  for (const ob of textObstacles(ctx.lines, target, ctx.measure)) {
     if (overlaps(rect, ob.rect))
       out.push({ kind: "text", rect: ob.rect, label: ob.label });
   }
@@ -190,6 +197,8 @@ export function checkFit(patch: PatchGeometry, ctx: FitContext): FitResult {
     patch.bold,
     patch.align,
     ctx.measure,
+    3,
+    ctx.scaleX ?? 1,
   );
   const warnings: Warning[] = [];
 

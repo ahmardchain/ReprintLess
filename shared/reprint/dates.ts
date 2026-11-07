@@ -183,7 +183,7 @@ export function findDates(text: string): DateMention[] {
   const found: DateMention[] = [];
 
   for (const m of text.matchAll(RE_TEXT_DMY)) {
-    const [, wd, wdDot, wdSep, day, ord, sep, mon, monDot, ySep, year] = m;
+    const [, wd, wdDot, wdSep, day = "", ord, sep = " ", mon = "", monDot, ySep, year] = m;
     const fmt = baseFormat();
     fmt.kind = "text-dmy";
     const weekday = weekdayPart(fmt, wd, wdDot, wdSep);
@@ -197,14 +197,14 @@ export function findDates(text: string): DateMention[] {
     if (!wd) fmt.textCase = caseOf(mon);
     const date: YMD = {
       y: year ? Number(year) : null,
-      m: MON_ALIASES[mon.toLowerCase()],
+      m: MON_ALIASES[mon.toLowerCase()] ?? 0,
       d: Number(day),
     };
     if (valid(date)) push(found, m, date, weekday ?? null, fmt);
   }
 
   for (const m of text.matchAll(RE_TEXT_MDY)) {
-    const [, wd, wdDot, wdSep, mon, monDot, sep, day, ord, ySep, year] = m;
+    const [, wd, wdDot, wdSep, mon = "", monDot, sep = " ", day = "", ord, ySep, year] = m;
     const fmt = baseFormat();
     fmt.kind = "text-mdy";
     fmt.order = "mdy";
@@ -219,14 +219,14 @@ export function findDates(text: string): DateMention[] {
     if (!wd) fmt.textCase = caseOf(mon);
     const date: YMD = {
       y: year ? Number(year) : null,
-      m: MON_ALIASES[mon.toLowerCase()],
+      m: MON_ALIASES[mon.toLowerCase()] ?? 0,
       d: Number(day),
     };
     if (valid(date)) push(found, m, date, weekday ?? null, fmt);
   }
 
   for (const m of text.matchAll(RE_NUM_DMY)) {
-    const [, wd, wdDot, wdSep, day, sep, mon, year] = m;
+    const [, wd, wdDot, wdSep, day = "", sep = "/", mon = "", year = ""] = m;
     const fmt = baseFormat();
     const weekday = weekdayPart(fmt, wd, wdDot, wdSep);
     fmt.sep = sep;
@@ -245,7 +245,7 @@ export function findDates(text: string): DateMention[] {
   }
 
   for (const m of text.matchAll(RE_ISO)) {
-    const [, wd, wdDot, wdSep, year, mon, day] = m;
+    const [, wd, wdDot, wdSep, year = "", mon = "", day = ""] = m;
     const fmt = baseFormat();
     const weekday = weekdayPart(fmt, wd, wdDot, wdSep);
     fmt.order = "ymd";
@@ -301,7 +301,7 @@ export function formatDate(date: YMD, fmt: DateFormat): string {
   const y = date.y;
   let out = "";
   if (fmt.weekday !== "none" && y !== null) {
-    const name = WEEKDAYS[weekdayOf(y, date.m, date.d)];
+    const name = WEEKDAYS[weekdayOf(y, date.m, date.d)]!;
     const wd = fmt.weekday === "long" ? name : name.slice(0, 3);
     out += applyCase(wd, fmt.textCase) + (fmt.weekdayDot ? "." : "") + fmt.weekdaySep;
   }
@@ -316,7 +316,7 @@ export function formatDate(date: YMD, fmt: DateFormat): string {
     if (fmt.order === "ymd") return out + [yr, mon, day].join(fmt.sep);
     return out + [day, mon, yr].join(fmt.sep);
   }
-  const monName = MONTHS[date.m - 1];
+  const monName = MONTHS[date.m - 1]!;
   const mon =
     applyCase(fmt.month === "long" ? monName : monName.slice(0, 3), fmt.textCase) +
     (fmt.monthDot ? "." : "");
@@ -382,8 +382,8 @@ export function weekdayMismatches(
     out.push({
       mention,
       date,
-      statedWeekday: WEEKDAYS[mention.weekday],
-      actualWeekday: WEEKDAYS[actual],
+      statedWeekday: WEEKDAYS[mention.weekday]!,
+      actualWeekday: WEEKDAYS[actual]!,
       nearestMatching: keepYear,
       nearestMatchingText: formatDate(keepYear, mention.format),
       correctedWeekdayText: formatDate(date, mention.format),

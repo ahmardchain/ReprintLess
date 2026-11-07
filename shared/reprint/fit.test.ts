@@ -25,7 +25,7 @@ const ctx = (locks: LockGeometry[] = []): FitContext => ({ lines, locks, patches
 
 describe("find-text", () => {
   it("returns a sub-line bbox from runs and font measurement", () => {
-    const [m] = findText([{ lines }], "December 2026", measure);
+    const m = findText([{ lines }], "December 2026", measure)[0]!;
     expect(m.lineId).toBe("date");
     const expectedX = date.x + measure("Saturday, 5 ", "sans", true, 20);
     expect(m.bbox.x).toBeCloseTo(expectedX, 1);

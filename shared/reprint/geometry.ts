@@ -1,4 +1,4 @@
-import type { Line, Rect } from "./types";
+import type { Line, Measure, Rect } from "./types";
 
 export const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -72,6 +72,7 @@ export function lineRect(line: Line): Rect {
 export function textObstacles(
   lines: Line[],
   target: Rect,
+  measure?: Measure,
 ): { rect: Rect; label: string }[] {
   const out: { rect: Rect; label: string }[] = [];
   for (const line of lines) {
@@ -80,6 +81,10 @@ export function textObstacles(
     // A line counts as "targeted" when the target covers a real part of its height.
     if (!hit || hit.h < line.h * 0.4 || hit.w < 1) {
       out.push({ rect: lr, label: line.text });
+      continue;
+    }
+    if (measure && line.runs.length) {
+      out.push(...remainderBoxes(line, target, measure));
       continue;
     }
     const leftW = target.x - line.x;
@@ -96,6 +101,56 @@ export function textObstacles(
         label: line.text,
       });
     }
+  }
+  return out;
+}
+
+/** x of a character boundary, proportional within its run (see find.ts). */
+function boundaryX(line: Line, offset: number, measure: Measure): number {
+  let pos = 0;
+  for (const run of line.runs) {
+    const len = run.text.length;
+    if (offset <= pos + len) {
+      const printed = run.text.replace(/\s+$/, "");
+      const local = Math.min(offset - pos, printed.length);
+      const full = measure(printed, line.fontFamily, line.bold, line.fontSize);
+      if (full <= 0) return run.x;
+      return run.x + run.w * (measure(printed.slice(0, local), line.fontFamily, line.bold, line.fontSize) / full);
+    }
+    pos += len;
+  }
+  return line.x + line.w;
+}
+
+/**
+ * Boxes of the printed characters left and right of the target on a
+ * targeted line, ignoring the spaces next to the target (labels may use them).
+ */
+function remainderBoxes(line: Line, target: Rect, measure: Measure): { rect: Rect; label: string }[] {
+  const text = line.text;
+  const out: { rect: Rect; label: string }[] = [];
+  // Last character boundary at or before the target's left edge.
+  let leftEnd = 0;
+  for (let i = 0; i <= text.length; i++) {
+    if (boundaryX(line, i, measure) <= target.x + 0.75) leftEnd = i;
+    else break;
+  }
+  let firstRight = text.length;
+  for (let i = text.length; i >= 0; i--) {
+    if (boundaryX(line, i, measure) >= right(target) - 0.75) firstRight = i;
+    else break;
+  }
+  const leftText = text.slice(0, leftEnd).replace(/\s+$/, "");
+  if (leftText.length) {
+    const x1 = boundaryX(line, leftText.length, measure);
+    if (x1 - line.x > 0.5) out.push({ rect: { x: line.x, y: line.y, w: x1 - line.x, h: line.h }, label: line.text });
+  }
+  const rightRaw = text.slice(firstRight);
+  const lead = rightRaw.length - rightRaw.replace(/^\s+/, "").length;
+  if (rightRaw.trim().length) {
+    const x0 = boundaryX(line, firstRight + lead, measure);
+    const x1 = line.x + line.w;
+    if (x1 - x0 > 0.5) out.push({ rect: { x: x0, y: line.y, w: x1 - x0, h: line.h }, label: line.text });
   }
   return out;
 }

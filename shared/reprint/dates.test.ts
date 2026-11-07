@@ -5,7 +5,7 @@ import { findDates, formatDate, weekdayMismatches, weekdayOf } from "./dates";
 const one = (s: string) => {
   const found = findDates(s);
   expect(found).toHaveLength(1);
-  return found[0];
+  return found[0]!;
 };
 
 describe("findDates", () => {
@@ -26,7 +26,7 @@ describe("findDates", () => {
 
   it("finds dates inside sentences with offsets", () => {
     const text = "See you on 5/12/2026! · Free entry";
-    const [m] = findDates(text);
+    const m = findDates(text)[0]!;
     expect(text.slice(m.start, m.end)).toBe("5/12/2026");
   });
 
@@ -83,7 +83,7 @@ describe("weekday checker", () => {
   });
 
   it("offers the nearest matching date and the corrected weekday", () => {
-    const [mm] = weekdayMismatches("Saturday, 14 December 2026", 2026);
+    const mm = weekdayMismatches("Saturday, 14 December 2026", 2026)[0]!;
     expect(mm.actualWeekday).toBe("Monday");
     expect(mm.statedWeekday).toBe("Saturday");
     expect(mm.nearestMatchingText).toBe("Saturday, 12 December 2026");
